@@ -476,6 +476,7 @@ def test_print_failure_when_logs_found_in_rms_model(
     )
     (fm_executor_env / "run_path" / "2025_RMS.log").touch()
     (fm_executor_env / "run_path" / "workflow.log").touch()
+    (fm_executor_env / "run_path" / "20260715-092055-zdtHhM-RMS.log").touch()
 
     rms = ForwardModelExecutor(config)
     assert rms.run() == 1
@@ -485,6 +486,8 @@ def test_print_failure_when_logs_found_in_rms_model(
     assert f"* {fm_executor_env}/run_path" in captured.err
     assert "workflow.log" in captured.err
     assert "2025_RMS.log" in captured.err
+    assert "20260715-092055-zdtHhM-RMS.log" not in captured.err
+    assert "YYYYMMDD-HHMMSS-XXXXXX-RMS.log" not in captured.err
 
     for line in captured.err.split("\n"):
         assert line.startswith("\t") is False

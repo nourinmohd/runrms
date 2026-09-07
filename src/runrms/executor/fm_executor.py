@@ -97,9 +97,18 @@ class ForwardModelExecutor(RmsExecutor[ForwardModelConfig]):
 
     def print_failure(self, exit_status: int) -> None:
         run_path = self.config.run_path.resolve()
-        # Reverse sort so workflow.log is (probably) first and
-        # YYYYMMDD-HHMMSS-XXXXX-RMS.log files are (probably) last
-        log_files = sorted(glob.glob(f"{run_path}/*.log"), reverse=True)
+        # Reverse sort so workflow.log is (probably) first
+        log_files = sorted(
+            (
+                log_file
+                for log_file in glob.glob(f"{run_path}/*.log")
+                if not re.fullmatch(
+                    r"\d{8}-\d{6}-[A-Za-z0-9]{6}-RMS\.log",
+                    os.path.basename(log_file),
+                )
+            ),
+            reverse=True,
+        )
 
         if exit_status == 137:
             # When the OOM-killer strikes, the RMS process (or maybe one of its
@@ -143,7 +152,6 @@ class ForwardModelExecutor(RmsExecutor[ForwardModelConfig]):
         * RMS.stderr.NN and RMS.stdout.NN
         * rms/model/workflow.log
         * Other named log files in rms/model, e.g. workflow_sim2seis.log
-        * rms/model/YYYYMMDD-HHMMSS-XXXXXX-RMS.log corresponding to your run
 
         The following log files were found in this realization's run path:
 
@@ -152,11 +160,6 @@ class ForwardModelExecutor(RmsExecutor[ForwardModelConfig]):
             fail_msg += "\n".join([f"* {f}" for f in log_files])
 
             for log_file in log_files:
-                if re.match(
-                    r"^\d{8}-\d{6}-[A-Za-z0-9]{6}-RMS", os.path.basename(log_file)
-                ):
-                    # These logfiles are unstructured and will not give any results
-                    continue
                 try:
                     job_failed_msg = self._find_job_failures(Path(log_file))
                 except Exception:
